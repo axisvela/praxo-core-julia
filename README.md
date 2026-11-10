@@ -1,52 +1,62 @@
 # PRAXO-CORE Julia Core
 
-Julia implementation of the PRAXO-CORE contract. This repository is the Julia
-package mirror for registration in the General Registry.
+Julia implementation of the PRAXO-CORE contract.
 
-- Package: `PraxoCore`
 - `SPEC_VERSION`: `0.2.0`
 - Core version: `0.2.0`
 - Tier: core
 - License: MIT
 - Dependency: JSON.jl
 
-## Install
+## Registry and Coding-Agent Entry
 
-After General Registry registration:
-
-```julia
-using Pkg
-Pkg.add("PraxoCore")
-```
-
-Before registration, use this repository directly:
-
-```julia
-using Pkg
-Pkg.develop(path="path/to/praxo-core-julia")
-```
+- Registry introduction: [REGISTRY.md](https://github.com/axisvela/praxo-core/blob/main/language/julia/REGISTRY.md)
+- Machine-readable entry: [llms.txt](https://github.com/axisvela/praxo-core/blob/main/language/julia/llms.txt) and [llms.md](https://github.com/axisvela/praxo-core/blob/main/language/julia/llms.md)
+- Coding-agent contract: [docs/getting-started/coding-agents.md](https://github.com/axisvela/praxo-core/blob/main/docs/getting-started/coding-agents.md)
+- Registry: [Julia General (pending)](https://github.com/axisvela/praxo-core-julia)
 
 ## Scope
 
 `0.2.0` implements all eleven conformance vector groups: tool-call parsing, JSON
 Schema, plugin manifests, memory, events, stream kinds, checkpoint envelopes,
-path policy, context budgets, middleware, and the agent loop. Provider adapters
-remain follow-up work.
+path policy, context budgets, middleware, and the agent loop. A non-streaming
+OpenAI-compatible model adapter is available in `src/OpenAICompatible.jl`.
+
+## OpenAI-Compatible Adapter
+
+`OpenAICompatibleModel` implements the native `AbstractModel` seam. It posts to
+`{base_url}/chat/completions` and maps assistant content, tool calls, and token
+usage. Supply `transport` to run without network access; it receives
+`(path, payload)` and returns decoded JSON.
+
+```julia
+adapter = openai_compatible("https://api.example.com/v1", "model-id";
+                            api_key = "token")
+result = generate(adapter, Request([Message(Roles.USER, "hi")]))
+```
+
+Provider HTTP failures raise `PraxoError` with code `PROVIDER_HTTP`; invalid
+tool-argument JSON raises `PROVIDER_JSON`. Streaming is not implemented.
 
 ## Build and test
 
 ```bash
-julia --project=. -e 'using Pkg; Pkg.instantiate()'
-julia --project=. test/runtests.jl
+julia --project=language/julia -e 'using Pkg; Pkg.instantiate()'
+julia --project=language/julia language/julia/conformance/run.jl
+julia --project=language/julia language/julia/api-snapshot.jl --check
+julia --project=language/julia language/julia/test/runtests.jl
 ```
+
+Local toolchain used by the repository maintainers lives at `D:\dev\julia`.
 
 ## Layout
 
 - `src/` package source.
-- `test/runtests.jl` test suite.
-- `Project.toml` package metadata and UUID.
+- `conformance/run.jl` vector runner.
+- `api-snapshot.jl` and `api/` public API snapshot.
+- `test/runtests.jl` Julia test suite.
 
 ## Release
 
-This mirror uses plain semantic-version tags such as `0.2.0`; the main monorepo
-uses `julia/v0.2.0`. Registration is handled by JuliaRegistrator.
+Tag shape: `julia/v0.2.0`. The tag targets `SPEC_VERSION` `0.2.0`. The mirror `axisvela/praxo-core-julia` registers the package through
+JuliaRegistrator; see [PUBLISHING.md](PUBLISHING.md).
